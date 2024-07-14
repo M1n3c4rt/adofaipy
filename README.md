@@ -1,6 +1,9 @@
 # adofaipy
 A library that makes automating events in ADOFAI levels more convenient.
 
+Install using `pip install adofaipy` in the terminal.
+See the [pypi page](https://pypi.org/project/adofaipy/) for this project.
+
 This is a library that makes automating events in ADOFAI levels more convenient.
 <br>List of Classes:<br>
 <hr>
