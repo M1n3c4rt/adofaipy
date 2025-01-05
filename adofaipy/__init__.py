@@ -2,6 +2,10 @@ import re
 import json
 from collections import UserDict
 from typing import Callable
+import copy
+
+class InvalidLevelDictException(Exception):
+	pass
 
 class Action(UserDict):
 	def __init__(self,*arg,**kw):
@@ -17,91 +21,19 @@ class Tile():
 		self.actions = actions.copy()
 		self.decorations = decorations.copy()
 
-class Settings():
-	def __init__(self, values : dict) -> None:
-		self.version = values["version"]
-		self.artist = values["artist"]
-		self.specialArtistType = values["specialArtistType"]
-		self.artistPermission = values["artistPermission"]
-		self.song = values["song"]
-		self.author = values["author"]
-		self.separateCountdownTime = values["separateCountdownTime"]
-		self.previewImage = values["previewImage"]
-		self.previewIcon = values["previewIcon"]
-		self.previewIconColor = values["previewIconColor"]
-		self.previewSongStart = values["previewSongStart"]
-		self.previewSongDuration = values["previewSongDuration"]
-		self.seizureWarning = values["seizureWarning"]
-		self.levelDesc = values["levelDesc"]
-		self.levelTags = values["levelTags"]
-		self.artistLinks = values["artistLinks"]
-		self.speedTrialAim = values["speedTrialAim"]
-		self.difficulty = values["difficulty"]
-		self.requiredMods = values["requiredMods"]
-		self.songFilename = values["songFilename"]
-		self.bpm = values["bpm"]
-		self.volume = values["volume"]
-		self.offset = values["offset"]
-		self.pitch = values["pitch"]
-		self.hitsound = values["hitsound"]
-		self.hitsoundVolume = values["hitsoundVolume"]
-		self.countdownTicks = values["countdownTicks"]
-		self.trackColorType = values["trackColorType"]
-		self.trackColor = values["trackColor"]
-		self.secondaryTrackColor = values["secondaryTrackColor"]
-		self.trackColorAnimDuration = values["trackColorAnimDuration"]
-		self.trackColorPulse = values["trackColorPulse"]
-		self.trackPulseLength = values["trackPulseLength"]
-		self.trackStyle = values["trackStyle"]
-		self.trackTexture = values["trackTexture"]
-		self.trackTextureScale = values["trackTextureScale"]
-		self.trackGlowIntensity = values["trackGlowIntensity"]
-		self.trackAnimation = values["trackAnimation"]
-		self.beatsAhead = values["beatsAhead"]
-		self.trackDisappearAnimation = values["trackDisappearAnimation"]
-		self.beatsBehind = values["beatsBehind"]
-		self.backgroundColor = values["backgroundColor"]
-		self.showDefaultBGIfNoImage = values["showDefaultBGIfNoImage"]
-		self.showDefaultBGTile = values["showDefaultBGTile"]
-		self.defaultBGTileColor = values["defaultBGTileColor"]
-		self.defaultBGShapeType = values["defaultBGShapeType"]
-		self.defaultBGShapeColor = values["defaultBGShapeColor"]
-		self.bgImage = values["bgImage"]
-		self.bgImageColor = values["bgImageColor"]
-		self.parallax = values["parallax"]
-		self.bgDisplayMode = values["bgDisplayMode"]
-		self.imageSmoothing = values["imageSmoothing"]
-		self.lockRot = values["lockRot"]
-		self.loopBG = values["loopBG"]
-		self.scalingRatio = values["scalingRatio"]
-		self.relativeTo = values["relativeTo"]
-		self.position = values["position"]
-		self.rotation = values["rotation"]
-		self.zoom = values["zoom"]
-		self.pulseOnFloor = values["pulseOnFloor"]
-		self.bgVideo = values["bgVideo"]
-		self.loopVideo = values["loopVideo"]
-		self.vidOffset = values["vidOffset"]
-		self.floorIconOutlines = values["floorIconOutlines"]
-		self.stickToFloors = values["stickToFloors"]
-		self.planetEase = values["planetEase"]
-		self.planetEaseParts = values["planetEaseParts"]
-		self.planetEasePartBehavior = values["planetEasePartBehavior"]
-		self.defaultTextColor = values["defaultTextColor"]
-		self.defaultTextShadowColor = values["defaultTextShadowColor"]
-		self.congratsText = values["congratsText"]
-		self.perfectText = values["perfectText"]
-		self.legacyFlash = values["legacyFlash"]
-		self.legacyCamRelativeTo = values["legacyCamRelativeTo"]
-		self.legacySpriteTiles = values["legacySpriteTiles"]
+class Settings(UserDict):
+	def __init__(self,*arg,**kw):
+		super(Settings, self).__init__(*arg, **kw)
 		
 class LevelDict:
 
-	def __init__(self, filename : str, encoding="utf-8-sig") -> None:
+	def __init__(self, filename : str='', encoding="utf-8-sig") -> None:
 		
 		self.filename = filename
 		self.encoding = encoding
 		leveldict = self._getFileDict()
+		if 'actions' not in leveldict or 'settings' not in leveldict or ('angleData' not in leveldict and 'pathData' not in leveldict):
+			raise InvalidLevelDictException('The provided .adofai file is invalid. (check for missing fields)')
 
 		if "angleData" in leveldict:
 			__angleData = leveldict["angleData"]
@@ -109,14 +41,14 @@ class LevelDict:
 			__pathchars = { "R": 0, "p": 15, "J": 30, "E": 45, "T": 60, "o": 75, "U": 90, "q": 105, "G": 120, "Q": 135, "H": 150, "W": 165, "L": 180, "x": 195, "N": 210, "Z": 225, "F": 240, "V": 255, "D": 270, "Y": 285, "B": 300, "C": 315, "M": 330, "A": 345, "!": 999}
 
 			__angleData = []
-			for i in "".split(leveldict["pathData"]):
+			for i in leveldict["pathData"]:
 				__angleData.append(__pathchars[i])
 		
 		__angleData.append(__angleData[-1] if __angleData[-1] != 999 else (__angleData[-2]+180)%360)
 		actions = leveldict["actions"]
-		decorations = leveldict["decorations"]
+		decorations = leveldict["decorations"] if 'decorations' in leveldict else []
 		self.nonFloorDecos = [Decoration(j) for j in decorations if "floor" not in j.keys()]
-		self.settings = Settings(leveldict["settings"])
+		self.settings = Settings(leveldict["settings"]) if filename != '' else dict()
 		self.tiles = [Tile(0)]
 		self.tiles.pop()
 
@@ -128,7 +60,10 @@ class LevelDict:
 
 		for deco in decorations:
 			if "floor" in deco.keys():
-				self.tiles[deco["floor"]].decorations.append(Decoration(deco))
+				if deco["floor"] >= len(self.tiles):
+					self.tiles[-1].decorations.append(Decoration(deco))
+				else:
+					self.tiles[deco["floor"]].decorations.append(Decoration(deco))
 
 	def _getFileString(self) -> str:
 		"""Returns the specified file in string format.
@@ -141,6 +76,15 @@ class LevelDict:
 	def _getFileDict(self) -> dict:
 		"""Returns the specified file in the form of nested dictionaries and lists.
 		"""
+
+		if self.filename == '':
+			return {
+				"angleData": [0],
+				"settings": dict(),
+				"actions" : [],
+				"decorations" : []
+			}
+
 		a = self._getFileString()
 		sp=re.split(r"(?<!\\)(?:\\\\)*(\")",a)
 
@@ -154,14 +98,14 @@ class LevelDict:
 		final = json.loads(a)
 		return final
 
-	def __addTile(self, angle : float, index : int=None) -> None:
+	def __addTile(self, angle : float, index=None) -> None:
 		if index is not None:
 			self.tiles.insert(index, Tile(angle))
 		else:
-			self.tiles.insert(len(self.tiles)-1, Tile(angle))
-			self.tiles[len(self.tiles)-1].angle = self.tiles[len(self.tiles)-2].angle
+			self.tiles.append(Tile(angle))
+			self.tiles[-2].angle = angle
 
-	def __addTiles(self, angles : list[float], index : int=None) -> None:
+	def __addTiles(self, angles : list[float], index=None) -> None:
 		
 		if index is not None:
 			for angle in reversed(angles):
@@ -174,21 +118,11 @@ class LevelDict:
 		"""Adds a single tile to the end of the level.
 		"""
 		self.__addTile(angle)
-		for i in range(len(self.tiles)-1, len(self.tiles)):
-			for action in self.tiles[i].actions:
-				action["floor"] += 1
-			for deco in self.tiles[i].decorations:
-				deco["floor"] += 1
 
 	def appendTiles(self, angles : list[float]) -> None:
 		"""Adds a list of tiles to the end of the level.
 		"""
 		self.__addTiles(angles)
-		for i in range(len(self.tiles)-1, len(self.tiles)):
-			for action in self.tiles[i].actions:
-				action["floor"] += len(angles)
-			for deco in self.tiles[i].decorations:
-				deco["floor"] += len(angles)
 
 	def insertTile(self, angle : float, index : int) -> None:
 		"""Adds a single tile to the level before the specified index.
@@ -226,45 +160,38 @@ class LevelDict:
 		for tile,angle in zip(self.tiles,angles):
 			tile.angle = angle
 
-	def getAnglesRelative(self, ignoretwirls: bool=False) -> list[float]:
+	def getAnglesRelative(self, ignoretwirls: bool=False, padmidspins: bool=False) -> list[float]:
 		"""Gets a list of relative angles (degrees between each pair of tiles.)
 		Twirls are taken into account by default. To disable this, set ignoretwirls to True.
+		If padmidspins is set to True, midspin values (999) are replaced with 0 instead of being removed in order to keep the list the same length.
 		Midspins are always taken into account.
 		"""
-		absangles = self.getAngles()
-		midspins = []
-		anglesrev = list(reversed(absangles)).copy()
-		for idx,angle in enumerate(anglesrev):
-			if angle == 999:
-				for idx_ in range(idx):
-					anglesrev[idx_] = (anglesrev[idx_] + 180) % 360
-				print(anglesrev.pop(idx))
-		absangles = list(reversed(anglesrev))
+		absangles = self.getAngles().copy()
+
+		if not ignoretwirls:
+			twirls = [event['floor'] for event in self.getActions(lambda x: x['eventType'] == 'Twirl')]
+			for twirl in reversed(twirls):
+				absangles[twirl:] = [(2*absangles[twirl-1]-angle)%360 if angle != 999 else 999 for angle in absangles[twirl:]]
+
+		midspins = [idx for idx,angle in enumerate(absangles) if angle == 999]
+		for midspin in reversed(midspins):
+			absangles[midspin+1:] = [(angle+180)%360 if angle != 999 else 999 for angle in absangles[midspin+1:]]
+
+		if not padmidspins:
+			absangles = [angle for angle in absangles if angle != 999]
 
 		angles = []
-		for angle,angle_ in zip(absangles,absangles[1:]):
-			angles.append(angle - angle_ + 180)
-
-		angles.insert(0,180)
-
-		twirls = [event['floor'] for event in self.getActions(lambda x: x['eventType'] == 'Twirl')]
-		twirltiles = []
-
-		if len(twirls)%2 == 1:
-			twirls.append(len(self.tiles)+10)
-
-		for i in range(0,len(twirls),2):
-			twirltiles += list(range(twirls[i],twirls[i+1]))
-
-		offset = 0
-		if not ignoretwirls:
-			for idx,angle in enumerate(angles):
-				if idx in midspins:
-					offset += 1
-				if idx+offset in twirltiles:
-					angles[idx] = (((360-angle)-1)%360)+1 if angle != 999 else 999
-
-		angles = [(angle-1)%360 + 1 for angle in angles]
+		for idx,angle in enumerate(absangles):
+			if angle == 999:
+				angles.append(0)
+			else:
+				if idx == 0:
+					angles.append((0-angle+180-1)%360+1)
+				else:
+					if absangles[idx-1] == 999:
+						angles.append((absangles[idx-2]-angle+180-1)%360+1)
+					else:
+						angles.append((absangles[idx-1]-angle+180-1)%360+1)
 
 		return angles
 	
@@ -298,7 +225,7 @@ class LevelDict:
 			self.nonFloorDecos.append(event)
 			return len(self.nonFloorDecos) - 1
 
-	def getActions(self, condition : Callable) -> list[Action]:
+	def getActions(self, condition : Callable=lambda x: True) -> list[Action]:
 		"""Returns a list of actions in the level that meet the given condition.
 		Returns a list of all actions if condition is not specified.
 		"""
@@ -308,7 +235,7 @@ class LevelDict:
 				
 		return matches
 	
-	def getDecorations(self, condition : Callable) -> list[Decoration]:
+	def getDecorations(self, condition : Callable=lambda x: True) -> list[Decoration]:
 		"""Returns a list of decorations in the level that meet the given condition.
 		Returns a list of all decorations if condition is not specified.
 		"""
@@ -351,14 +278,14 @@ class LevelDict:
 		Returns the event.
 		"""
 
-		return self.tiles[tile].actions[index].pop()
+		return self.tiles[tile].pop(index)
 
 	def popDecoration(self, tile, index) -> Decoration:
 		"""Removes the decoration at the specified tile at the specified index.
 		Returns the event.
 		"""
 
-		return self.tiles[tile].decorations[index].pop()
+		return self.tiles[tile].pop(index)
 
 	def replaceFieldAction(self, condition : Callable, field : str, new) -> None:
 		"""Changes the value of "field" to "new" in all actions that meet the given condition.
@@ -396,7 +323,7 @@ class LevelDict:
 		"""
 		
 		final = {"angleData": [], "settings": {}, "actions": [], "decorations": []}
-		final["settings"] = vars(self.settings)
+		final["settings"] = dict(self.settings)
 		for tile in self.tiles:
 			final["angleData"].append(tile.angle)
 			final["actions"].extend([dict(action) for action in tile.actions])
@@ -408,3 +335,40 @@ class LevelDict:
 		name = self.filename if filename is None else filename
 		with open(name, "w", encoding=self.encoding) as f:
 			json.dump(final, f, indent=4)
+
+def mergelevels(base: LevelDict, new: LevelDict, overwrite:bool=False, exclude_tile_events:bool=False):
+	"""Adds all the events from the new level to the base level in-place.
+	Angle-based events retain global angle offset but NOT floor number (all angle-based events are on tile 0).
+	Tile-based events retain floor number. These events are taken from base if exclude_tile_events is True and from new otherwise.
+	Overwrites the events from the base level if overwrite is True.
+	"""
+
+	if overwrite:
+		for tile in base.tiles:
+			if exclude_tile_events:
+				tile.actions = [action for action in tile.actions if 'angleOffset' in action]
+			else:
+				tile.decorations = []
+				tile.actions = []
+
+		base.nonFloorDecos = []
+
+	if not exclude_tile_events:
+		base.nonFloorDecos.extend(copy.deepcopy(new.nonFloorDecos))
+
+	cumulative_angle = 0
+	for tile, angle in zip(new.tiles, new.getAnglesRelative(padmidspins=True)):
+		for event in tile.actions:
+			if 'angleOffset' in event:
+				new_event = copy.deepcopy(event)
+				new_event['floor'] = 0
+				new_event['angleOffset'] += cumulative_angle
+				base.addAction(new_event)
+			elif not exclude_tile_events:
+				base.addAction(copy.deepcopy(event))
+
+		if not exclude_tile_events:
+			for deco in tile.decorations:
+				base.addDecoration(copy.deepcopy(deco))
+
+		cumulative_angle += angle

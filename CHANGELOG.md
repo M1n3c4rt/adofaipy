@@ -1,6 +1,37 @@
 
 <h1>Changelog</h1>
 
+## 3.2.3 (2024/10/10)
+------------------
+- Minor update and bugfixes
+- Cleaned stray debug statement
+- Fixed metadata getting reset on level write
+- Fixed bugs in `popAction()` and `popDecoration()`
+- Added `padmidspins` option to `getAnglesRelative()`
+
+## 3.2.2 (2024/09/15)
+------------------
+- Minor bugfixes
+- Fixed bug in `getAnglesRelative()`
+
+## 3.2.1 (2024/09/15)
+------------------
+- Minor bugfixes
+- Deleted testing line
+- Fixed bug in `getAnglesRelative()`
+- Fixed error in README.md
+
+## 3.2.0 (2024/09/07)
+------------------
+- Major update and bugfixes
+- `Settings` class now inherits from and behaves like `dict` in order to keep it future-proof
+- Added default arguments for `getActions()` and `getDecorations()`
+- Fixed bug in `pathData` reading
+- Removed stray `print()` statement
+- Blank `LevelDict` is now generated if no `filename` is given
+- Fixed `appendTile()` and `appendTiles()` moving events between tiles
+- Added KR translation to documentation (by Purple0702)
+
 ## 3.1.0 (2024/05/20)
 ------------------
 - Major update and bugfixes

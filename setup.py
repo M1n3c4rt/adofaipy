@@ -10,11 +10,11 @@ classifiers = [
  
 setup(
   name='adofaipy',
-  version='3.1.0',
+  version='3.2.3',
   description='A library that makes automating events in ADOFAI levels more convenient.',
-  long_description=open('README.md').read() + open('CHANGELOG.md').read(),
+  long_description=open('README.md',encoding='utf-8-sig').read() + open('CHANGELOG.md').read(),
   long_description_content_type="text/markdown",
-  url='',
+  url='https://github.com/M1n3c4rt/adofaipy',
   author='M1n3c4rt',
   author_email='vedicbits@gmail.com',
   license='MIT',
