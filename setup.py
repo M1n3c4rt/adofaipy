@@ -10,7 +10,7 @@ classifiers = [
  
 setup(
   name='adofaipy',
-  version='3.2.3',
+  version='3.2.4',
   description='A library that makes automating events in ADOFAI levels more convenient.',
   long_description=open('README.md',encoding='utf-8-sig').read() + open('CHANGELOG.md').read(),
   long_description_content_type="text/markdown",

@@ -1,6 +1,11 @@
 
 <h1>Changelog</h1>
 
+## 3.2.4 (2025/01/05)
+------------------
+- Minor bugfix
+- Levels with malformed newline characters are now parsed properly
+
 ## 3.2.3 (2024/10/10)
 ------------------
 - Minor update and bugfixes

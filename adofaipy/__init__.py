@@ -93,6 +93,10 @@ class LevelDict:
 				sp[i] = re.sub(r"(\n|\t)", "", sp[i])
 				sp[i] = re.sub(r"\,(( *)(\]|\}))", "\\3", sp[i])
 				sp[i] = re.sub(r"(\]|\})(\[|\{)", "\\1,\\2", sp[i])
+			elif i % 2 == 0:
+				sp[i] = re.sub(r"(\n)", "\\\\n", sp[i])
+				sp[i] = re.sub(r"(\t)", "\\\\t", sp[i])
+				sp[i] = re.sub(r"(\r)", "\\\\r", sp[i]) # this is for all zero people who put return carriage characters in their files
 		
 		a = ''.join(sp)
 		final = json.loads(a)
